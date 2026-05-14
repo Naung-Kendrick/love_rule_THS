@@ -40,6 +40,117 @@ function loadState() {
 function saveState() {
   state.lastActive = new Date().toISOString();
   localStorage.setItem('loveRulesState', JSON.stringify(state));
+  syncToSupabase();
+}
+
+// ─── SUPABASE CONNECT & SYNC ─────────────────────────────
+
+function showConnectModal() {
+  document.getElementById('connectModal').style.display = 'flex';
+}
+
+function hideConnectModal() {
+  document.getElementById('connectModal').style.display = 'none';
+}
+
+function switchConnectTab(tab) {
+  document.getElementById('createTab').classList.toggle('active', tab === 'create');
+  document.getElementById('joinTab').classList.toggle('active', tab === 'join');
+  document.getElementById('connectCreate').style.display = tab === 'create' ? 'block' : 'none';
+  document.getElementById('connectJoin').style.display = tab === 'join' ? 'block' : 'none';
+  document.getElementById('connectError').textContent = '';
+}
+
+function generateRoomCode() {
+  const code = 'LV' + Math.random().toString(36).substring(2, 8).toUpperCase();
+  document.getElementById('generatedCode').textContent = code;
+  document.getElementById('connectError').innerHTML =
+    `Share this code!<br><small style="color:#999">Then tap Connect below.</small>`;
+  document.getElementById('generatedCode').dataset.code = code;
+  const btn = document.querySelector('#connectCreate .btn-primary');
+  btn.textContent = '\u{1F504} Use This Code';
+  btn.onclick = () => connectRoom(code);
+}
+
+function joinRoom() {
+  const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+  if (code.length < 3) {
+    document.getElementById('connectError').textContent = 'Enter a valid code';
+    return;
+  }
+  connectRoom(code);
+}
+
+async function connectRoom(code) {
+  roomCode = code;
+  setRoomCode(code);
+  document.getElementById('connectError').textContent = 'Connecting...';
+
+  initSupabase();
+
+  const checkReady = setInterval(async () => {
+    if (!supabaseReady) return;
+    clearInterval(checkReady);
+
+    const remote = await loadFromSupabase(code);
+    if (remote) {
+      Object.assign(state, remote);
+      localStorage.setItem('loveRulesState', JSON.stringify(state));
+      renderAll();
+    } else {
+      await saveToSupabase(code, state);
+    }
+
+    subscribeToRoom(code, (incoming) => {
+      state.vowIndex = incoming.vowIndex || 0;
+      state.pledgeSigned = incoming.pledgeSigned || false;
+      state.customRules = incoming.customRules || [];
+      state.customVows = incoming.customVows || [];
+      state.memories = incoming.memories || [];
+      state.profileKo = incoming.profileKo || state.profileKo;
+      state.profileThet = incoming.profileThet || state.profileThet;
+      localStorage.setItem('loveRulesState', JSON.stringify(state));
+      renderAll();
+    });
+
+    hideConnectModal();
+    document.getElementById('syncBar').style.display = 'flex';
+    updateSyncStatus('online');
+    showToast('\u{1F48D} Connected! Data is now shared.');
+  }, 200);
+}
+
+function renderAll() {
+  renderProfiles();
+  renderCustomRules();
+  renderVows();
+  renderGallery();
+  updateProgress();
+  updateStats();
+  if (state.pledgeSigned) {
+    const btn = document.querySelector('.pledge-btn');
+    const status = document.getElementById('pledgeStatus');
+    btn.textContent = '\u{1F389} We agreed to our rules';
+    btn.classList.add('signed');
+    const d = new Date(state.lastActive).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    status.textContent = `\u2764 Signed by Ko & Thet Htar on ${d}`;
+    status.classList.add('signed');
+  }
+}
+
+function updateSyncStatus(status) {
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  if (!dot || !text) return;
+  dot.className = 'sync-dot ' + status;
+  text.textContent = status === 'online' ? 'Synced' : status === 'syncing' ? 'Syncing...' : 'Offline';
+}
+
+async function syncToSupabase() {
+  if (!roomCode || !supabaseReady || !supabaseClient) return;
+  updateSyncStatus('syncing');
+  await saveToSupabase(roomCode, state);
+  updateSyncStatus('online');
 }
 
 // ─── PROFILES ─────────────────────────────────────────────
@@ -700,5 +811,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
+  }
+
+  const stored = getRoomCode();
+  if (stored) {
+    roomCode = stored;
+    initSupabase();
+    const check = setInterval(() => {
+      if (supabaseReady) {
+        clearInterval(check);
+        subscribeToRoom(roomCode, (incoming) => {
+          state.vowIndex = incoming.vowIndex || 0;
+          state.pledgeSigned = incoming.pledgeSigned || false;
+          state.customRules = incoming.customRules || [];
+          state.customVows = incoming.customVows || [];
+          state.memories = incoming.memories || [];
+          state.profileKo = incoming.profileKo || state.profileKo;
+          state.profileThet = incoming.profileThet || state.profileThet;
+          localStorage.setItem('loveRulesState', JSON.stringify(state));
+          renderAll();
+        });
+        document.getElementById('syncBar').style.display = 'flex';
+        updateSyncStatus('online');
+      }
+    }, 200);
+  } else {
+    initSupabase();
+    showConnectModal();
   }
 });
