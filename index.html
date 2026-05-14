@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#6a1b9a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Love Rules - Ko & Thet Htar</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icon.svg" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="floating-hearts" id="heartsContainer"></div>
+
+  <div class="container">
+    <header class="header">
+      <div class="names">
+        <span class="name ko">Ko <small>Naung Naung</small></span>
+        <span class="heart-symbol">&hearts;</span>
+        <span class="name thet">Thet Htar <small>Thet Htar Oo</small></span>
+      </div>
+      <p class="tagline">Create Your Love Rules Together</p>
+    </header>
+
+    <section class="intro">
+      <p>Write your own love rules and vows together. Each rule shows who created it. Tap to mark done, swipe vows to browse.</p>
+    </section>
+
+    <section class="custom-rules-section">
+      <div class="section-heading">&#10022; Our Rules &#10022;</div>
+
+      <div class="custom-rules-list" id="customRulesList">
+      </div>
+
+      <div class="add-form" id="addRuleForm">
+        <h3 id="ruleFormHeading">&#10022; Add a Rule &#10022;</h3>
+        <input type="text" id="ruleTitleInput" class="form-input" placeholder="Rule title..." maxlength="60" />
+        <textarea id="ruleDescInput" class="form-input form-textarea" placeholder="Describe the rule..." maxlength="200" rows="2"></textarea>
+        <div class="author-picker">
+          <span class="author-label">Made by:</span>
+          <div class="author-options">
+            <button class="author-btn author-ko active" onclick="selectAuthor('ko')" id="authorKoBtn">&#128153; Ko</button>
+            <button class="author-btn author-thet" onclick="selectAuthor('thet')" id="authorThetBtn">&#128154; Thet Htar</button>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="ruleSubmitBtn" onclick="addCustomRule()">+ Add Rule</button>
+          <button class="btn-cancel" id="ruleCancelBtn" onclick="cancelEdit()" style="display:none">Cancel</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="counter-bar">
+      <div class="counter-track">
+        <div class="counter-fill" id="progressFill"></div>
+      </div>
+      <span class="counter-text" id="progressText">0 / 0</span>
+    </section>
+
+    <section class="vows-section">
+      <div class="section-heading">&#10022; Our Vows &#10022;</div>
+
+      <div class="vows-carousel-area" id="vowsArea">
+        <p class="empty-vows" id="emptyVows">No vows yet. Write your first vow below.</p>
+        <div class="vow-carousel" id="vowCarousel" style="display:none">
+          <p id="vowText"></p>
+        </div>
+        <div class="vow-controls" id="vowControls" style="display:none">
+          <button class="vow-nav" onclick="prevVow()" aria-label="Previous vow">&#8249;</button>
+          <span id="vowCounter" class="vow-indicator">0 / 0</span>
+          <button class="vow-nav" onclick="nextVow()" aria-label="Next vow">&#8250;</button>
+        </div>
+      </div>
+
+      <div class="add-form">
+        <h3>&#10022; Add a Vow &#10022;</h3>
+        <textarea id="vowInput" class="form-input form-textarea" placeholder="Write your vow..." maxlength="300" rows="2"></textarea>
+        <div class="author-picker">
+          <span class="author-label">Made by:</span>
+          <div class="author-options">
+            <button class="author-btn author-ko active" onclick="selectVowAuthor('ko')" id="vowAuthorKoBtn">&#128153; Ko</button>
+            <button class="author-btn author-thet" onclick="selectVowAuthor('thet')" id="vowAuthorThetBtn">&#128154; Thet Htar</button>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="addVow()">+ Add Vow</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="anniversary-section">
+      <div class="section-heading">&#10022; Our Love Counts &#10022;</div>
+      <div class="countdown-card">
+        <p class="countdown-label">Together since <strong>February 2, 2025</strong></p>
+        <div class="countdown-grid" id="countdownGrid">
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cdYears">0</span>
+            <span class="countdown-unit-label">years</span>
+          </div>
+          <div class="countdown-divider">:</div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cdMonths">0</span>
+            <span class="countdown-unit-label">months</span>
+          </div>
+          <div class="countdown-divider">:</div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cdDays">0</span>
+            <span class="countdown-unit-label">days</span>
+          </div>
+          <div class="countdown-divider">:</div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cdHours">0</span>
+            <span class="countdown-unit-label">hours</span>
+          </div>
+          <div class="countdown-divider">:</div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cdMinutes">0</span>
+            <span class="countdown-unit-label">min</span>
+          </div>
+          <div class="countdown-divider">:</div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cdSeconds">0</span>
+            <span class="countdown-unit-label">sec</span>
+          </div>
+        </div>
+        <div class="reminder-banner" id="reminderBanner" style="display:none">
+          <div class="reminder-icon">&#127881;</div>
+          <div class="reminder-text">
+            <strong>Happy Monthly Anniversary!</strong>
+            <span>Another month of love together &#10084;&#65039;</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pledge">
+      <button class="pledge-btn" onclick="togglePledge()">
+        &#9997; We agree to our rules
+      </button>
+      <p id="pledgeStatus" class="pledge-status"></p>
+    </section>
+
+    <section class="stats">
+      <h2>Our Journey</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-value" id="rulesCount">0</span>
+          <span class="stat-label">Rules Made</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="vowsCount">0</span>
+          <span class="stat-label">Vows Made</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="lastActive">--</span>
+          <span class="stat-label">Last Active</span>
+        </div>
+      </div>
+      <button class="reset-btn" onclick="resetAll()">Reset Everything</button>
+    </section>
+
+    <footer class="footer">
+      <p>Made with <span class="heart">&hearts;</span> by Ko for Thet Htar</p>
+      <p class="date" id="dateDisplay"></p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
