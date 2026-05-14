@@ -168,6 +168,34 @@
       </div>
     </section>
 
+    <section class="gallery-section">
+      <div class="section-heading">&#10022; Our Memories &#10022;</div>
+
+      <div class="gallery-grid" id="galleryGrid">
+      </div>
+
+      <div class="gallery-upload" id="galleryUploadForm">
+        <h3>&#10022; Add a Memory &#10022;</h3>
+        <div class="gallery-photo-picker" id="photoPreviewBox" onclick="document.getElementById('galleryFileInput').click()">
+          <span id="galleryUploadPlaceholder">&#128247; Tap to choose photo</span>
+          <img id="galleryPreview" style="display:none" alt="Preview" />
+        </div>
+        <input type="file" id="galleryFileInput" accept="image/*" onchange="previewGalleryPhoto(this)" style="display:none" />
+        <textarea id="galleryCaptionInput" class="form-input form-textarea" placeholder="Write a caption for this memory..." maxlength="200" rows="2"></textarea>
+        <div class="author-picker">
+          <span class="author-label">Added by:</span>
+          <div class="author-options">
+            <button class="author-btn author-ko active" onclick="selectMemoryAuthor('ko')" id="memAuthorKoBtn">&#128153; Ko</button>
+            <button class="author-btn author-thet" onclick="selectMemoryAuthor('thet')" id="memAuthorThetBtn">&#128154; Thet Htar</button>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="addMemory()">+ Add Memory</button>
+          <button class="btn-cancel" onclick="cancelMemoryUpload()" id="cancelMemoryBtn" style="display:none">Cancel</button>
+        </div>
+      </div>
+    </section>
+
     <section class="pledge">
       <button class="pledge-btn" onclick="togglePledge()">
         &#9997; We agree to our rules
@@ -185,6 +213,10 @@
         <div class="stat-card">
           <span class="stat-value" id="vowsCount">0</span>
           <span class="stat-label">Vows Made</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="memoriesCount">0</span>
+          <span class="stat-label">Memories</span>
         </div>
         <div class="stat-card">
           <span class="stat-value" id="lastActive">--</span>

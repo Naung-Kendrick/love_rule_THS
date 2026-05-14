@@ -1,9 +1,12 @@
 const MAX_RULES = 50;
 const MAX_VOWS = 30;
+const MAX_MEMORIES = 50;
 
 // State
 let selectedAuthor = 'ko';
 let selectedVowAuthor = 'ko';
+let selectedMemoryAuthor = 'ko';
+let memoryPhotoData = null;
 let editingIndex = null;
 let state = loadState();
 
@@ -11,6 +14,7 @@ function getDefaultState() {
   return {
     customRules: [],
     customVows: [],
+    memories: [],
     vowIndex: 0,
     pledgeSigned: false,
     profileKo: null,
@@ -26,6 +30,7 @@ function loadState() {
       const parsed = JSON.parse(saved);
       if (!parsed.customRules) parsed.customRules = [];
       if (!parsed.customVows) parsed.customVows = [];
+      if (!parsed.memories) parsed.memories = [];
       return parsed;
     }
   } catch (e) {}
@@ -82,6 +87,100 @@ function renderProfiles() {
       removeBtn.style.display = 'none';
     }
   });
+}
+
+// ─── GALLERY / MEMORIES ──────────────────────────────────
+
+function renderGallery() {
+  const grid = document.getElementById('galleryGrid');
+  if (!grid) return;
+
+  if (state.memories.length === 0) {
+    grid.innerHTML = '<p class="memory-empty">No memories yet. Add your first one above!</p>';
+    return;
+  }
+
+  grid.innerHTML = state.memories.map((mem, i) => `
+    <div class="memory-card">
+      <img src="${escapeHtml(mem.photo)}" alt="${escapeHtml(mem.caption || 'Memory')}" loading="lazy" />
+      <div class="memory-info">
+        <p>${escapeHtml(mem.caption || '')}</p>
+        <div class="memory-meta">
+          <span class="memory-author ${mem.author}">${mem.author === 'ko' ? 'Ko' : 'Thet Htar'}</span>
+          <span class="memory-date">${mem.date}</span>
+        </div>
+      </div>
+      <button class="memory-delete" onclick="deleteMemory(${i})" aria-label="Delete memory">&times;</button>
+    </div>
+  `).join('');
+}
+
+function previewGalleryPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    memoryPhotoData = e.target.result;
+    document.getElementById('galleryPreview').src = memoryPhotoData;
+    document.getElementById('galleryPreview').style.display = 'block';
+    document.getElementById('galleryUploadPlaceholder').style.display = 'none';
+    document.getElementById('cancelMemoryBtn').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function cancelMemoryUpload() {
+  memoryPhotoData = null;
+  document.getElementById('galleryPreview').src = '';
+  document.getElementById('galleryPreview').style.display = 'none';
+  document.getElementById('galleryUploadPlaceholder').style.display = 'block';
+  document.getElementById('cancelMemoryBtn').style.display = 'none';
+  document.getElementById('galleryCaptionInput').value = '';
+}
+
+function selectMemoryAuthor(author) {
+  selectedMemoryAuthor = author;
+  document.getElementById('memAuthorKoBtn').classList.toggle('active', author === 'ko');
+  document.getElementById('memAuthorThetBtn').classList.toggle('active', author === 'thet');
+}
+
+function addMemory() {
+  if (!memoryPhotoData) {
+    showToast('Please choose a photo first');
+    return;
+  }
+
+  if (state.memories.length >= MAX_MEMORIES) {
+    showToast(`Max ${MAX_MEMORIES} memories reached`);
+    return;
+  }
+
+  const caption = document.getElementById('galleryCaptionInput').value.trim();
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  state.memories.unshift({
+    photo: memoryPhotoData,
+    caption,
+    author: selectedMemoryAuthor,
+    date: dateStr
+  });
+  saveState();
+
+  cancelMemoryUpload();
+  renderGallery();
+  updateStats();
+  showToast(`\u2764 Memory added by ${selectedMemoryAuthor === 'ko' ? 'Ko' : 'Thet Htar'}!`);
+}
+
+function deleteMemory(index) {
+  state.memories.splice(index, 1);
+  saveState();
+  renderGallery();
+  updateStats();
+  showToast('Memory removed');
 }
 
 // ─── RULES ───────────────────────────────────────────────
@@ -337,6 +436,8 @@ function updateProgress() {
 function updateStats() {
   document.getElementById('rulesCount').textContent = state.customRules.length;
   document.getElementById('vowsCount').textContent = state.customVows.length;
+  const memEl = document.getElementById('memoriesCount');
+  if (memEl) memEl.textContent = state.memories.length;
   const lastEl = document.getElementById('lastActive');
   if (lastEl) {
     const d = new Date(state.lastActive);
@@ -469,10 +570,13 @@ function resetAll() {
   }
   state = getDefaultState();
   editingIndex = null;
+  memoryPhotoData = null;
   saveState();
   resetRuleForm();
+  cancelMemoryUpload();
   renderCustomRules();
   renderVows();
+  renderGallery();
   updateProgress();
   updateStats();
 
@@ -572,6 +676,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderProfiles();
   renderCustomRules();
   renderVows();
+  renderGallery();
   updateProgress();
   updateStats();
   updateCountdown();
