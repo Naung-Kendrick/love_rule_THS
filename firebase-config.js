@@ -1,22 +1,11 @@
-// ═══════════════════════════════════════════════════════
-// FIREBASE SETUP
-// ═══════════════════════════════════════════════════════
-// 1. Go to https://console.firebase.google.com
-// 2. Create a free project
-// 3. Enable: Authentication → Anonymous Sign-in
-// 4. Enable: Cloud Firestore → Create database (start in test mode)
-// 5. Enable: Storage → Get started (start in test mode)
-// 6. Go to Project Settings → General → Your apps → Add web app
-// 7. Copy the config object below and replace the values
-// ═══════════════════════════════════════════════════════
-
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyC3n6Kvna6UT-u8UxSykARSQtH0kCsF3aU",
+  authDomain: "our-love-rule.firebaseapp.com",
+  projectId: "our-love-rule",
+  storageBucket: "our-love-rule.firebasestorage.app",
+  messagingSenderId: "475085776204",
+  appId: "1:475085776204:web:1b1bfea545995c0a645be9",
+  measurementId: "G-R3F04FGV13"
 };
 
 // ─── DON'T TOUCH BELOW THIS LINE ─────────────────────────
