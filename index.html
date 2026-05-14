@@ -11,8 +11,43 @@
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/icon.svg" />
   <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+  <script src="firebase-config.js"></script>
 </head>
 <body>
+  <!-- Sync Status Bar -->
+  <div class="sync-bar" id="syncBar">
+    <span class="sync-dot" id="syncDot"></span>
+    <span class="sync-text" id="syncText">Offline</span>
+  </div>
+
+  <!-- Connect Modal -->
+  <div class="modal-overlay" id="connectModal">
+    <div class="modal-card">
+      <div class="modal-heart">&hearts;</div>
+      <h2>Connect Together</h2>
+      <p class="modal-desc">Link your phones so you can share rules, vows, and memories together.</p>
+      <div class="modal-tabs">
+        <button class="modal-tab active" onclick="switchConnectTab('create')" id="createTab">Create Code</button>
+        <button class="modal-tab" onclick="switchConnectTab('join')" id="joinTab">Join Code</button>
+      </div>
+      <div id="connectCreate">
+        <p class="modal-hint">Generate a code. Share it with your partner so they can join.</p>
+        <div class="couple-code-display" id="generatedCode">------</div>
+        <button class="btn-primary" onclick="generateCoupleCode()">&#10024; Generate Code</button>
+      </div>
+      <div id="connectJoin" style="display:none">
+        <p class="modal-hint">Enter the code your partner shared with you.</p>
+        <input type="text" id="joinCodeInput" class="form-input" placeholder="Enter code..." maxlength="20" style="text-align:center;font-size:18px;letter-spacing:4px;text-transform:uppercase" />
+        <button class="btn-primary" onclick="joinCouple()">&#10024; Connect</button>
+      </div>
+      <p class="modal-error" id="connectError"></p>
+    </div>
+  </div>
+
   <div class="floating-hearts" id="heartsContainer"></div>
 
   <div class="container">

@@ -40,6 +40,181 @@ function loadState() {
 function saveState() {
   state.lastActive = new Date().toISOString();
   localStorage.setItem('loveRulesState', JSON.stringify(state));
+  syncToFirebase();
+}
+
+// ─── FIREBASE CONNECT & SYNC ──────────────────────────────
+
+function getStoredCode() {
+  return localStorage.getItem('coupleCode');
+}
+
+function setStoredCode(code) {
+  localStorage.setItem('coupleCode', code);
+}
+
+function showConnectModal() {
+  document.getElementById('connectModal').style.display = 'flex';
+}
+
+function hideConnectModal() {
+  document.getElementById('connectModal').style.display = 'none';
+}
+
+function switchConnectTab(tab) {
+  document.getElementById('createTab').classList.toggle('active', tab === 'create');
+  document.getElementById('joinTab').classList.toggle('active', tab === 'join');
+  document.getElementById('connectCreate').style.display = tab === 'create' ? 'block' : 'none';
+  document.getElementById('connectJoin').style.display = tab === 'join' ? 'block' : 'none';
+  document.getElementById('connectError').textContent = '';
+}
+
+function generateCoupleCode() {
+  const code = 'LV' + Math.random().toString(36).substring(2, 8).toUpperCase();
+  document.getElementById('generatedCode').textContent = code;
+  document.getElementById('connectError').innerHTML =
+    `Share this code with your partner!<br><small style="color:#999">Then tap Connect below.</small>`;
+  document.getElementById('generatedCode').dataset.code = code;
+  const btn = document.querySelector('#connectCreate .btn-primary');
+  btn.textContent = '\u{1F504} Use This Code';
+  btn.onclick = () => {
+    joinWithCode(code);
+  };
+}
+
+function joinCouple() {
+  const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+  if (code.length < 3) {
+    document.getElementById('connectError').textContent = 'Please enter a valid code';
+    return;
+  }
+  joinWithCode(code);
+}
+
+async function joinWithCode(code) {
+  coupleCode = code;
+  setStoredCode(code);
+  document.getElementById('connectError').textContent = 'Connecting...';
+
+  await syncFromFirebase();
+  hideConnectModal();
+
+  if (document.getElementById('syncBar')) {
+    document.getElementById('syncBar').style.display = 'flex';
+  }
+  updateSyncStatus('online');
+  showToast('\u{1F48D} Connected! Your data is now shared.');
+}
+
+function updateSyncStatus(status) {
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  if (!dot || !text) return;
+  dot.className = 'sync-dot ' + status;
+  text.textContent = status === 'online' ? 'Synced' : status === 'syncing' ? 'Syncing...' : 'Offline';
+}
+
+async function syncToFirebase() {
+  if (!coupleCode || !window.firebaseReady) return;
+  if (firebaseConfig.apiKey === 'YOUR_API_KEY') return;
+  if (!db) return;
+
+  updateSyncStatus('syncing');
+
+  const data = {
+    customRules: state.customRules,
+    customVows: state.customVows,
+    memories: state.memories.filter(m => !m._localOnly),
+    vowIndex: state.vowIndex,
+    pledgeSigned: state.pledgeSigned,
+    profileKo: state.profileKo || null,
+    profileThet: state.profileThet || null,
+    lastActive: state.lastActive,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  // Upload any local-only memory photos
+  for (const mem of state.memories) {
+    if (mem._localOnly && mem.photo.startsWith('data:')) {
+      const ext = 'jpg';
+      const name = `mem_${Date.now()}_${Math.random().toString(36).substring(2, 6)}.${ext}`;
+      const url = await uploadPhotoToFirebase(mem.photo, name);
+      if (url) {
+        mem.photo = url;
+        mem._localOnly = false;
+      }
+    }
+  }
+
+  // Upload profile photos
+  if (state.profileKo && state.profileKo.startsWith('data:')) {
+    const url = await uploadPhotoToFirebase(state.profileKo, 'profile_ko.jpg');
+    if (url) { data.profileKo = url; state.profileKo = url; }
+  }
+  if (state.profileThet && state.profileThet.startsWith('data:')) {
+    const url = await uploadPhotoToFirebase(state.profileThet, 'profile_thet.jpg');
+    if (url) { data.profileThet = url; state.profileThet = url; }
+  }
+
+  data.memories = state.memories.map(m => ({
+    photo: m.photo,
+    caption: m.caption || '',
+    author: m.author,
+    date: m.date
+  }));
+
+  await saveToFirebase(data);
+  localStorage.setItem('loveRulesState', JSON.stringify(state));
+  updateSyncStatus('online');
+}
+
+async function syncFromFirebase() {
+  if (!coupleCode || !window.firebaseReady) return;
+  if (firebaseConfig.apiKey === 'YOUR_API_KEY') return;
+  if (!db) return;
+
+  updateSyncStatus('syncing');
+  const remote = await loadFromFirebase();
+
+  if (remote) {
+    const localState = loadState();
+    const merged = {
+      ...localState,
+      customRules: remote.customRules || localState.customRules,
+      customVows: remote.customVows || localState.customVows,
+      memories: remote.memories || localState.memories,
+      vowIndex: remote.vowIndex || 0,
+      pledgeSigned: remote.pledgeSigned || false,
+      profileKo: remote.profileKo || localState.profileKo,
+      profileThet: remote.profileThet || localState.profileThet,
+      lastActive: remote.lastActive || localState.lastActive
+    };
+    state = merged;
+    localStorage.setItem('loveRulesState', JSON.stringify(state));
+    renderAll();
+    updateSyncStatus('online');
+  } else {
+    // No remote data yet, push local
+    await syncToFirebase();
+  }
+}
+
+function renderAll() {
+  renderProfiles();
+  renderCustomRules();
+  renderVows();
+  renderGallery();
+  updateProgress();
+  updateStats();
+  if (state.pledgeSigned) {
+    const btn = document.querySelector('.pledge-btn');
+    const status = document.getElementById('pledgeStatus');
+    btn.textContent = '\u{1F389} We agreed to our rules';
+    btn.classList.add('signed');
+    const d = new Date(state.lastActive).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    status.textContent = `\u2764 Signed by Ko & Thet Htar on ${d}`;
+    status.classList.add('signed');
+  }
 }
 
 // ─── PROFILES ─────────────────────────────────────────────
@@ -161,11 +336,13 @@ function addMemory() {
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
+  const isFirebase = window.firebaseReady && coupleCode && firebaseConfig.apiKey !== 'YOUR_API_KEY';
   state.memories.unshift({
     photo: memoryPhotoData,
     caption,
     author: selectedMemoryAuthor,
-    date: dateStr
+    date: dateStr,
+    _localOnly: isFirebase
   });
   saveState();
 
@@ -700,5 +877,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
+  }
+
+  // Firebase: init and check connection
+  initFirebase();
+
+  const stored = getStoredCode();
+
+  if (firebaseConfig.apiKey === 'YOUR_API_KEY') {
+    // Firebase not configured - hide sync bar and modal, use localStorage only
+    const bar = document.getElementById('syncBar');
+    if (bar) bar.style.display = 'none';
+    const modal = document.getElementById('connectModal');
+    if (modal) modal.style.display = 'none';
+    return;
+  }
+
+  if (stored) {
+    coupleCode = stored;
+    document.addEventListener('firebase-ready', async () => {
+      await syncFromFirebase();
+    });
+    // In case firebase is already ready
+    if (window.firebaseReady) {
+      setTimeout(() => syncFromFirebase(), 500);
+    }
+  } else {
+    showConnectModal();
+    document.addEventListener('firebase-ready', () => {
+      // already showing modal, ready to connect
+    });
   }
 });
