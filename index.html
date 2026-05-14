@@ -25,6 +25,38 @@
       <p class="tagline">Create Your Love Rules Together</p>
     </header>
 
+    <section class="profiles-section">
+      <div class="profile-cards">
+        <div class="profile-card" id="profileKo">
+          <div class="profile-avatar" id="avatarKo" onclick="document.getElementById('fileInputKo').click()">
+            <img src="" alt="Ko" id="avatarKoImg" style="display:none" />
+            <span class="avatar-placeholder" id="avatarKoPlaceholder">&#128153;</span>
+            <div class="avatar-overlay">Tap to set photo</div>
+          </div>
+          <div class="profile-info">
+            <strong>Ko</strong>
+            <small>Naung Naung</small>
+          </div>
+          <input type="file" id="fileInputKo" accept="image/*" onchange="setProfilePhoto('ko', this)" style="display:none" />
+          <button class="profile-remove-btn" id="removeKoBtn" onclick="removeProfilePhoto('ko')" style="display:none">&#10005;</button>
+        </div>
+
+        <div class="profile-card" id="profileThetHtar">
+          <div class="profile-avatar" id="avatarThetHtar" onclick="document.getElementById('fileInputThetHtar').click()">
+            <img src="" alt="Thet Htar" id="avatarThetHtarImg" style="display:none" />
+            <span class="avatar-placeholder" id="avatarThetHtarPlaceholder">&#128154;</span>
+            <div class="avatar-overlay">Tap to set photo</div>
+          </div>
+          <div class="profile-info">
+            <strong>Thet Htar</strong>
+            <small>Thet Htar Oo</small>
+          </div>
+          <input type="file" id="fileInputThetHtar" accept="image/*" onchange="setProfilePhoto('thet', this)" style="display:none" />
+          <button class="profile-remove-btn" id="removeThetBtn" onclick="removeProfilePhoto('thet')" style="display:none">&#10005;</button>
+        </div>
+      </div>
+    </section>
+
     <section class="intro">
       <p>Write your own love rules and vows together. Each rule shows who created it. Tap to mark done, swipe vows to browse.</p>
     </section>

@@ -13,6 +13,8 @@ function getDefaultState() {
     customVows: [],
     vowIndex: 0,
     pledgeSigned: false,
+    profileKo: null,
+    profileThet: null,
     lastActive: new Date().toISOString()
   };
 }
@@ -33,6 +35,53 @@ function loadState() {
 function saveState() {
   state.lastActive = new Date().toISOString();
   localStorage.setItem('loveRulesState', JSON.stringify(state));
+}
+
+// ─── PROFILES ─────────────────────────────────────────────
+
+function setProfilePhoto(person, input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    if (person === 'ko') state.profileKo = dataUrl;
+    else state.profileThet = dataUrl;
+    saveState();
+    renderProfiles();
+    showToast(`${person === 'ko' ? 'Ko' : 'Thet Htar'}'s photo set!`);
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function removeProfilePhoto(person) {
+  if (person === 'ko') state.profileKo = null;
+  else state.profileThet = null;
+  saveState();
+  renderProfiles();
+}
+
+function renderProfiles() {
+  ['ko', 'thet'].forEach((p) => {
+    const img = document.getElementById(`avatar${p === 'ko' ? 'Ko' : 'ThetHtar'}Img`);
+    const placeholder = document.getElementById(`avatar${p === 'ko' ? 'Ko' : 'ThetHtar'}Placeholder`);
+    const removeBtn = document.getElementById(`remove${p === 'ko' ? 'Ko' : 'Thet'}Btn`);
+    const data = p === 'ko' ? state.profileKo : state.profileThet;
+
+    if (data) {
+      img.src = data;
+      img.style.display = 'block';
+      placeholder.style.display = 'none';
+      removeBtn.style.display = 'flex';
+    } else {
+      img.src = '';
+      img.style.display = 'none';
+      placeholder.style.display = 'block';
+      removeBtn.style.display = 'none';
+    }
+  });
 }
 
 // ─── RULES ───────────────────────────────────────────────
@@ -520,6 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const vowText = document.getElementById('vowText');
   if (vowText) vowText.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
 
+  renderProfiles();
   renderCustomRules();
   renderVows();
   updateProgress();
